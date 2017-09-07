@@ -8,7 +8,7 @@ import Control.Monad.Writer
 import Data.Either
 import Data.Maybe
 import Data.Tuple
-import Form.Types
+-- import WForm.Types
 import Data.Lens
 import Prelude
 import Unsafe.Coerce
@@ -32,6 +32,10 @@ type WForm v f a =
 
 type FormError = Array String
 type FormAction f a = FormInput a -> Unit -> f Unit
+data FormInput a
+  = Submit
+  | Edit (a -> a)
+
 
 renderForm
   :: forall a v f
@@ -40,11 +44,13 @@ renderForm
   -> WForm v f a
   -> Array (HTML v (f Unit))
 renderForm _data eventType fields =
-  execWriter (runReaderT fields (Tuple _data eventType)) <> (submitButton_ (eventType Submit))
+  execWriter (runReaderT fields (Tuple _data eventType)) -- <> (submitButton_ (eventType Submit))
 
 emailField = field P.InputEmail
 textField = field P.InputText
 passwordField = field P.InputPassword
+dateField = field P.InputDate
+fileField = field P.InputFile
 
 field
   :: forall a b f v
@@ -69,10 +75,10 @@ field inpType id_ label lens_ validator = do
     pure (unsafeCoerce item)
   where
     html :: a -> FormAction f a -> String -> Array ClassName -> String -> HTML v (f Unit)
-    html data_ eventType errMsg classes item = 
+    html data_ eventType errMsg classes item =
       H.div [ P.classes classes ]
         [ H.label [ P.for id_ ] [ H.text label ]
-        , H.input 
+        , H.input
           [ P.id_ id_
           , P.classes [ ClassName "form-control" ]
           -- , P.inputType inpType
@@ -81,3 +87,15 @@ field inpType id_ label lens_ validator = do
           ]
         , H.span_ [ H.text errMsg ]
         ]
+
+styleClass = P.class_ <<< H.ClassName
+
+submitButton t h =
+  H.button
+  -- TODO fix no propogate and preventDefault
+    [ E.onClick (E.input_ h)
+    , styleClass "btn btn-primary"
+    , P.type_ P.ButtonSubmit ]
+    [ H.text t ]
+
+submitButton_ = submitButton "Submit"

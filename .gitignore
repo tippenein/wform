@@ -1,9 +1,12 @@
-/bower_components/
-/node_modules/
+**/bower_components/
+**/node_modules/
 /.pulp-cache/
-/output/
+**/output/
 /generated-docs/
 /.psc*
 /.purs*
 /.psa*
 **/*TAGS
+**/yarn.lock
+**/*.log
+example/dist/*.js

@@ -1,0 +1,8 @@
+{
+  "name": "form",
+  "private": true,
+  "dependencies": {
+    "purescript-halogen": "*",
+    "wform": "../"
+  }
+}
