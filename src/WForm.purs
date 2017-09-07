@@ -1,26 +1,17 @@
 module Form.WForm where
 
-import Control.Monad
-import Control.Monad.Reader
-import Control.Monad.Reader.Class
-import Control.Monad.Reader.Trans
-import Control.Monad.Writer
-import Data.Either
-import Data.Maybe
-import Data.Tuple
--- import WForm.Types
-import Data.Lens
+import Control.Monad.Reader.Trans (ReaderT, ask, runReaderT)
+import Control.Monad.Writer (Writer, execWriter, tell)
+import Data.Either (Either(..))
+import Data.Tuple (Tuple(..))
+import Data.Lens (Lens', set, (^.))
 import Prelude
-import Unsafe.Coerce
-
-import Data.Array hiding ((..))
+import Unsafe.Coerce (unsafeCoerce)
 import Data.String as Str
-import Halogen (action)
 import Halogen.HTML (ClassName(..))
 import Halogen.HTML as H
-import Halogen.HTML.Core (Prop(..), HTML(..))
+import Halogen.HTML.Core (HTML)
 import Halogen.HTML.Events as E
-import Halogen.HTML.Properties (IProp(..))
 import Halogen.HTML.Properties as P
 
 type WForm v f a =
@@ -32,6 +23,7 @@ type WForm v f a =
 
 type FormError = Array String
 type FormAction f a = FormInput a -> Unit -> f Unit
+
 data FormInput a
   = Submit
   | Edit (a -> a)
@@ -53,7 +45,7 @@ dateField = field P.InputDate
 fileField = field P.InputFile
 
 field
-  :: forall a b f v
+  :: forall a f v
    . P.InputType
   -> String
   -> String
