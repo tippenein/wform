@@ -1,4 +1,4 @@
-module Form.WForm where
+module WForm where
 
 import Control.Monad.Reader.Trans (ReaderT, ask, runReaderT)
 import Control.Monad.Writer (Writer, execWriter, tell)
@@ -36,7 +36,7 @@ renderForm
   -> WForm v f a
   -> Array (HTML v (f Unit))
 renderForm _data eventType fields =
-  execWriter (runReaderT fields (Tuple _data eventType)) -- <> (submitButton_ (eventType Submit))
+  execWriter (runReaderT fields (Tuple _data eventType)) <> [submitButton_ (eventType Submit)]
 
 emailField = field P.InputEmail
 textField = field P.InputText

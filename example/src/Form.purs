@@ -30,8 +30,8 @@ data Query a
 
 data Message = Toggled Boolean
 
-myButton :: forall m. H.Component HH.HTML Query Unit Message m
-myButton =
+myForm :: forall m. H.Component HH.HTML Query Unit Message m
+myForm =
   H.component
     { initialState: const initialState
     , render
