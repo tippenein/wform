@@ -7,7 +7,6 @@ import Data.Tuple (Tuple(..))
 import Data.Lens (Lens', set, (^.))
 import Prelude
 import Unsafe.Coerce (unsafeCoerce)
-import Data.String as Str
 import Halogen.HTML (ClassName(..))
 import Halogen.HTML as H
 import Halogen.HTML.Core (HTML)
@@ -17,7 +16,6 @@ import Halogen.HTML.Properties as P
 type WForm v f a =
   ReaderT
     (Tuple a (FormAction f a))
-    -- TODO: Tuple of arrays of errors and HTMLs
     (Writer (Array (HTML v (f Unit))))
     a
 
@@ -56,12 +54,10 @@ field inpType id_ label lens_ validator = do
     Tuple data_ eventType <- ask
     let item = data_ ^. lens_
         validation = validator item
-        classes = case validation of
-                       Left _ -> [ ClassName "form-group has-error" ]
-                       Right _ -> [ ClassName "form-group" ]
-        errMsg = case validation of
-                      Left str -> str
-                      Right _ -> ""
+        Tuple errMsg classes =
+          case validation of
+            Left str -> Tuple str [ ClassName "form-group has-error" ]
+            Right _ -> Tuple "" [ ClassName "form-group" ]
     tell [html data_ eventType errMsg classes item]
     -- TODO: handle this better
     pure (unsafeCoerce item)

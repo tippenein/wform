@@ -3,6 +3,6 @@
   "private": true,
   "dependencies": {
     "purescript-halogen": "*",
-    "wform": "../"
+    "wform": "*"
   }
 }

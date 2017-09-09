@@ -41,7 +41,7 @@ myForm =
   where
 
   initialState :: State
-  initialState = false
+  initialState = { errors: Nothing, registration: emptyReg }
 
   render :: State -> H.ComponentHTML Query
   render state = viewForm state
@@ -56,9 +56,9 @@ myForm =
 viewForm st =
   HH.div_ $
     F.renderForm st.registration Register do
-      F.textField "name" "User name" (_name) validateNothing
-      F.emailField "email" "Email" (_email) validEmail
-      F.passwordField "password" "Password" (_password) validPassword
+      void $ F.textField "name" "User name" (_name) validateNothing
+      void $ F.emailField "email" "Email" (_email) validEmail
+      void $ F.passwordField "password" "Password" (_password) validPassword
       F.passwordField "confirm" "Confirmation" (_confirmation) validConfirmation
     where
       validPassword str
