@@ -1,17 +1,21 @@
 module WForm where
 
+import Prelude
+
 import Control.Monad.Reader.Trans (ReaderT, ask, runReaderT)
 import Control.Monad.Writer (Writer, execWriter, tell)
 import Data.Either (Either(..))
-import Data.Tuple (Tuple(..))
 import Data.Lens (Lens', set, (^.))
-import Prelude
-import Unsafe.Coerce (unsafeCoerce)
-import Halogen.HTML (ClassName(..))
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Tuple (Tuple(..))
+import Halogen.HTML (ClassName(..), PropName(..))
 import Halogen.HTML as H
 import Halogen.HTML.Core (HTML)
 import Halogen.HTML.Events as E
 import Halogen.HTML.Properties as P
+import Unsafe.Coerce (unsafeCoerce)
+
+import WForm.Internal (stringToMaybe, styleClass)
 
 type WForm v f a =
   ReaderT
@@ -26,7 +30,17 @@ data FormInput a
   = Submit
   | Edit (a -> a)
 
-
+-- | The main function for building a form.
+-- Each field has the normal name and label along with a lens for accessing and
+-- a validator for the input.
+-- ```
+-- newtype TheForm = TheForm { email :: String }
+--
+-- _email = _Newtype <<< prop (SProxy :: SProxy "email")
+--
+-- renderForm state.form Register do
+--   textField "name" "User Name" _email emailValidator
+-- ```
 renderForm
   :: forall a v f
    . a
@@ -41,6 +55,12 @@ textField = field P.InputText
 passwordField = field P.InputPassword
 dateField = field P.InputDate
 fileField = field P.InputFile
+
+emailFieldOpt = fieldOpt P.InputEmail
+textFieldOpt = fieldOpt P.InputText
+passwordFieldOpt = fieldOpt P.InputPassword
+dateFieldOpt = fieldOpt P.InputDate
+fileFieldOpt = fieldOpt P.InputFile
 
 field
   :: forall a f v
@@ -69,14 +89,49 @@ field inpType id_ label lens_ validator = do
         , H.input
           [ P.id_ id_
           , P.classes [ ClassName "form-control" ]
-          -- , P.inputType inpType
+          , P.prop (PropName "type") inpType
           , P.value item
           , E.onValueChange (E.input (eventType <<< Edit <<< set lens_))
           ]
         , H.span_ [ H.text errMsg ]
         ]
-
-styleClass = P.class_ <<< H.ClassName
+fieldOpt
+  :: forall a b f v
+   . P.InputType
+  -> String
+  -> String
+  -> Lens' a (Maybe String)
+  -> (String -> Either String String)
+  -> WForm v f a
+fieldOpt inpType id_ label lens_ validator = do
+    Tuple data_ eventType <- ask
+    let item = data_ ^. lens_
+        validation = case item of
+                          Nothing -> Right ""
+                          Just i -> validator i
+        classes = case validation of
+                       Left _ -> [ ClassName "form-group has-error" ]
+                       Right _ -> [ ClassName "form-group" ]
+        errMsg = case validation of
+                      Left str -> str
+                      Right _ -> ""
+    tell [html eventType errMsg classes item]
+    -- TODO: handle this better
+    pure (unsafeCoerce item)
+  where
+    html :: FormAction f a -> String -> Array ClassName -> (Maybe String) -> HTML v (f Unit)
+    html eventType errMsg classes item =
+      H.div [ P.classes classes ]
+        [ H.label [ P.for id_ ] [ H.text label ]
+        , H.input
+          [ P.id_ id_
+          , P.classes [ ClassName "form-control" ]
+          , P.prop (PropName "type") inpType
+          , P.value $ fromMaybe "" item
+          , E.onValueChange (E.input (\a -> eventType (Edit (\b -> set lens_ (stringToMaybe a) b))))
+          ]
+        , H.span_ [ H.text errMsg ]
+        ]
 
 submitButton t h =
   H.button

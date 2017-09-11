@@ -15,12 +15,13 @@ import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
 import WForm as F
+import WForm.Validation as Valid
 
 _Newtype :: forall t a s b. Newtype t a => Newtype s b => Iso t s a b
 _Newtype = iso unwrap wrap
 
-type State = {
-    errors :: Maybe F.FormError
+type State =
+  { errors :: Maybe F.FormError
   , registration :: UserReg
   }
 
@@ -28,9 +29,7 @@ type State = {
 data Query a
   = Register (F.FormInput UserReg) a
 
-data Message = Toggled Boolean
-
-myForm :: forall m. H.Component HH.HTML Query Unit Message m
+myForm :: forall m. H.Component HH.HTML Query Unit Void m
 myForm =
   H.component
     { initialState: const initialState
@@ -46,18 +45,20 @@ myForm =
   render :: State -> H.ComponentHTML Query
   render state = viewForm state
 
-  eval :: Query ~> H.ComponentDSL State Query Message m
-  eval (Register f a) = handleRegister f $> pure a
+  eval :: Query ~> H.ComponentDSL State Query Void m
+  eval (Register f next) = handleRegister f $> pure next
     where
       handleRegister (F.Edit f) = H.modify (stRegistration %~ f)
-      handleRegister (F.Submit) = do
-        H.liftAff $ log "asdf"
+      handleRegister F.Submit =
+        -- post logic
+        H.liftAff $ log "post here"
 
 viewForm st =
   HH.div_ $
     F.renderForm st.registration Register do
-      void $ F.textField "name" "User name" (_name) validateNothing
-      void $ F.emailField "email" "Email" (_email) validEmail
+      void $ F.textField "name" "User name" (_name) Valid.nonBlank
+      void $ F.textFieldOpt "description" "Description" (_description) Valid.optional
+      void $ F.emailField "email" "Email" (_email) Valid.emailValidator
       void $ F.passwordField "password" "Password" (_password) validPassword
       F.passwordField "confirm" "Confirmation" (_confirmation) validConfirmation
     where
@@ -67,15 +68,7 @@ viewForm st =
       validConfirmation str
           | str == st ^. stRegistration <<< _password = Right str
           | otherwise = Left "Password must match confirmation"
-      validEmail str = maybe (Left "Must have @ symbol") (const (Right str)) (Str.indexOf (Str.Pattern "@") str)
-      validateNothing str = Right str
 
-
-initialState :: State
-initialState = {
-    registration: emptyReg
-  , errors: Nothing
-  }
 
 stRegistration :: Lens' State UserReg
 stRegistration =
@@ -84,21 +77,22 @@ stRegistration =
 newtype UserReg
   = UserReg
   { email        :: String
+  , description  :: Maybe String
   , name         :: String
   , password     :: String
   , confirmation :: String
   }
-
-_UserReg :: Lens' UserReg { email :: String, password :: String, confirmation :: String, name :: String }
-_UserReg = _Newtype
 
 derive instance newtypeUserReg :: Newtype UserReg _
 
 _name :: Lens' UserReg String
 _name = _Newtype <<< lens (_.name) (_ { name = _ })
 
+_description :: Lens' UserReg (Maybe String)
+_description = _Newtype <<< lens (_.description) (_ { description = _ })
+
 _email :: Lens' UserReg String
-_email = _UserReg <<< lens (_.email) (_ { email = _ })
+_email = _Newtype <<< lens (_.email) (_ { email = _ })
 
 _password :: Lens' UserReg String
 _password = _Newtype <<< lens (_.password) (_ { password = _ })
@@ -115,7 +109,7 @@ stErrors = lens _.errors _ { errors = _ }
 
 mkRegistration :: String -> String -> String -> String -> UserReg
 mkRegistration e p pc n =
-    UserReg { email: e, password: p, confirmation: pc, name: n }
+    UserReg { email: e, description: Nothing, password: p, confirmation: pc, name: n }
 
 -- derive instance genericUserReg :: Generic UserReg
 
