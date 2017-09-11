@@ -19,24 +19,19 @@ WForm
 ```purescript
 renderView Registration st =
     H.div_ $ errs st.errors :
-        WF.renderForm st.registration Register do
-            WF.textField "name" "User name:" (_UserReg <<< name) urlSafe
-            WF.emailField "email" "Email:" (_UserReg <<< email) validEmail
-            WF.passwordField "password" "Password:" (_UserReg <<< password) validPassword
-            WF.passwordField "confirm" "Confirmation:" (_UserReg <<< confirmation) validConfirmation
-    where
-      validPassword str
-          | Str.length str < 6 = Left "Password must be at least 6 characters"
-          | otherwise = Right str
-      validConfirmation str
-          | str == st ^. stRegistration <<< _UserReg <<< password = Right str
-          | otherwise = Left "Password must match confirmation"
-      validEmail str = maybe (Left "Must have @ symbol") (const (Right str)) (Str.indexOf "@" str)
-      urlSafe str = case Reg.match (Reg.regex "^[\\w\\d-_]*$" Reg.noFlags) str of
-                         Just _ -> Right str
-                         Nothing -> Left "Only alphanumeric characters, '_', and '-' are allowed."
+      F.renderForm st.registration Register do
+        void $ F.textField "name" "User name" (_name) F.nonBlank
+        void $ F.textFieldOpt "description" "Description" (_description) F.optional
+        void $ F.emailField "email" "Email" (_email) F.emailValidator
+        void $ F.passwordField "password" "Password" (_password) validPassword
+        F.passwordField "confirm" "Confirmation" (_confirmation) validConfirmation
+      where
+        validPassword str
+            | Str.length str < 6 = Left "Password must be at least 6 characters"
+            | otherwise = Right str
+        validConfirmation str
+            | str == st ^. stRegistration <<< _password = Right str
+            | otherwise = Left "Password must match confirmation"
 ```
 
-**TODO** add a runnable example to this repo
-
-Full example [here](https://github.com/parsonsmatt/ql-purs/blob/master/src/QuickLift/View.purs#L80-L109)
+Full example [here](https://github.com/tippenein/wform/blob/master/example/Main.purs)
