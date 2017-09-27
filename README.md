@@ -19,18 +19,19 @@ WForm
 ```purescript
 renderView Registration st =
     H.div_ $ errs st.errors :
+      -- The 3rd field (_name, _bio, etc) are the lens accessors to the form values
       F.renderForm st.registration Register do
-        void $ F.textField "name" "User name" (_name) F.nonBlank
-        void $ F.textFieldOpt "description" "Description" (_description) F.optional
-        void $ F.emailField "email" "Email" (_email) F.emailValidator
-        void $ F.passwordField "password" "Password" (_password) validPassword
-        F.passwordField "confirm" "Confirmation" (_confirmation) validConfirmation
+        void $ F.textField     "name"     "User name"    _name         F.nonBlank
+        void $ F.textFieldOpt  "bio"      "Bio"          _bio          F.optional
+        void $ F.emailField    "email"    "Email"        _email        F.emailValidator
+        void $ F.passwordField "password" "Password"     _password     validPassword
+        F.passwordField        "confirm"  "Confirmation" _confirmation validConfirmation
       where
         validPassword str
             | Str.length str < 6 = Left "Password must be at least 6 characters"
-            | otherwise = Right str
-        validConfirmation str
-            | str == st ^. stRegistration <<< _password = Right str
+            | otherwise          = Right str
+        validConfirmation p
+            | p == st ^. stRegistration <<< _password = Right p
             | otherwise = Left "Password must match confirmation"
 ```
 
