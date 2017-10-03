@@ -15,7 +15,6 @@ WForm
 
 ## example usage
 
-**TODO** This isn't up to date and should probably be entirely moved
 ```purescript
 renderView Registration st =
     H.div_ $ errs st.errors :
